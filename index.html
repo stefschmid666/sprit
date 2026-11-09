@@ -64,11 +64,21 @@ input[type=text],select{font:inherit;padding:10px 12px;border:1px solid var(--li
 .leaflet-popup-content{margin:10px 12px;font:14px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
 .pop b{font-size:15px}.pop .pp{font-size:20px;font-weight:800;margin:2px 0}.pop a.btn{display:inline-block;margin-top:6px;color:#fff;text-decoration:none;padding:6px 10px;font-size:14px}
 .pop .trend{border:0;padding:0;margin-top:4px}
-.trend{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:8px;padding-top:8px;border-top:1px solid var(--line);font-size:13px;color:var(--muted)}
+.trend{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:6px;font-size:13px;color:var(--muted)}
 .trend:empty{display:none}
 .tr.up{color:#d6453d;font-weight:700}
 .tr.down{color:var(--accent);font-weight:700}
 .spark{flex:none;color:var(--muted)}
+.reco{border-color:var(--accent)}
+.reco .rh{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--muted);margin-bottom:10px}
+.reco .rh input{width:70px;font:inherit;font-weight:700;font-size:16px;padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);text-align:center}
+.reco .rt{font-size:18px}
+.reco .rs{font-size:14px;margin-top:4px}
+.reco .rf{font-size:12px;color:var(--muted);margin-top:8px;line-height:1.35}
+.cl{font-size:13px;margin-top:8px;padding-top:8px;border-top:1px solid var(--line);color:var(--muted)}
+.cl .good{color:var(--accent);font-weight:700}
+.cl .bad,.cl.bad{color:#d6453d}
+.cl.bad{font-weight:400}
 .sortbar{display:flex;align-items:center;gap:6px;margin:0 0 10px;font-size:14px;color:var(--muted)}
 .sortbar button{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:999px;padding:5px 12px;font:inherit;font-size:14px;font-weight:600;cursor:pointer}
 .sortbar button.on{background:var(--accent);border-color:var(--accent);color:#fff}
@@ -123,6 +133,11 @@ let sh = loadSh();
 let view = 'list';
 let busy = false, error = '';
 if (cfg.at === undefined) cfg.at = true;
+if (!cfg.liters) cfg.liters = 45;
+if (!cfg.cons) cfg.cons = 6.5;
+if (cfg.wear == null) cfg.wear = 0.05;
+const ROAD = 1.3, TANK = 56;
+let calc = {}, calcInfo = null;
 
 function fmtPrice(p){
   const s = p.toFixed(3).replace('.', ',');
@@ -207,8 +222,12 @@ function render(){
     if (!all.length) h += `<p class="hint">Keine Tankstellen im Umkreis gefunden. Vergrößere den Umkreis in den Einstellungen.</p>`;
     const min = open.length ? open[0].price : null;
     const bestId = open.length ? open[0].id : null;
-    h += `<div class="sortbar"><span>Sortieren:</span><button data-sort="price" class="${cfg.sort !== 'dist' ? 'on' : ''}">💶 Preis</button><button data-sort="dist" class="${cfg.sort === 'dist' ? 'on' : ''}">📍 Entfernung</button></div>`;
-    const shown = cfg.sort === 'dist' ? open.slice().sort((a, b) => a.dist - b.dist || a.price - b.price) : open;
+    computeCalc(open);
+    if (calcInfo) h += recoCard();
+    h += `<div class="sortbar"><span>Sortieren:</span><button data-sort="price" class="${cfg.sort !== 'dist' && cfg.sort !== 'save' ? 'on' : ''}">💶 Preis</button><button data-sort="dist" class="${cfg.sort === 'dist' ? 'on' : ''}">📍 Nähe</button><button data-sort="save" class="${cfg.sort === 'save' ? 'on' : ''}">💡 Ersparnis</button></div>`;
+    const shown = cfg.sort === 'dist' ? open.slice().sort((a, b) => a.dist - b.dist || a.price - b.price)
+      : cfg.sort === 'save' ? open.slice().sort((a, b) => (calc[b.id] ? calc[b.id].save : -99) - (calc[a.id] ? calc[a.id].save : -99))
+      : open;
     shown.forEach(s => h += station(s, s.id === bestId, min));
     if (closed.length) h += `<p class="hint" style="margin:16px 2px 8px">Geschlossen</p>` + closed.map(s => station(s, false, null, true)).join('');
   } else if (!busy && !error) {
@@ -227,7 +246,52 @@ function station(s, best, min, isClosed){
     <div class="info"><div class="brand"><span class="cc">${s.cc === 'AT' ? '🇦🇹' : '🇩🇪'}</span>${esc(s.name)}${best ? '<span class="tag cheap">günstigste</span>' : ''}${isClosed ? '<span class="tag cl">zu</span>' : ''}</div>
       <div class="addr">${esc(s.addr)} · ${String(s.dist).replace('.', ',')} km</div></div>
     <div>${s.price != null ? `<div class="price">${fmtPrice(s.price)}</div>` : '<div class="hint">–</div>'}${diff ? `<div class="diff">${diff}</div>` : ''}</div>
-  </a>${isClosed ? '' : `<div class="trend">${trend(s)}</div>`}</div>`;
+  </a>${isClosed ? '' : calcLine(s) + `<div class="trend">${trend(s)}</div>`}</div>`;
+}
+
+/* ---------- Lohnt sich die Fahrt? ---------- */
+const eur = v => v.toFixed(2).replace('.', ',') + ' €';
+function computeCalc(open){
+  calc = {}; calcInfo = null;
+  if (!open.length) return;
+  const near = open.reduce((a, b) => b.dist < a.dist ? b : a);
+  const in10 = open.filter(s => s.dist <= 10);
+  const base = in10.length ? in10 : open;
+  const avg = base.reduce((t, s) => t + s.price, 0) / base.length;
+  const kmCost = cfg.cons / 100 * avg + cfg.wear;
+  const L = cfg.liters;
+  for (const s of open) {
+    const extraKm = Math.max(0, s.dist - near.dist) * 2 * ROAD;
+    const extraCost = extraKm * kmCost;
+    const diff = near.price - s.price;
+    const save = s.id === near.id ? 0 : diff * L - extraCost;
+    const be = diff > 0 ? extraCost / diff : Infinity;
+    calc[s.id] = {extraKm, extraCost, diff, save, be, isNear: s.id === near.id};
+  }
+  let best = near;
+  for (const s of open) if (calc[s.id].save > calc[best.id].save) best = s;
+  calcInfo = {near, best, avg, kmCost, n: base.length};
+}
+function recoCard(){
+  const {near, best, avg, kmCost, n} = calcInfo, c = calc[best.id];
+  const worth = best.id !== near.id && c.save >= 0.50;
+  return `<div class="card reco">
+    <div class="rh"><span>⛽ Ich tanke ca.</span><input type="number" inputmode="numeric" id="liters" min="1" max="200" value="${cfg.liters}"><span>Liter</span></div>
+    ${worth
+      ? `<div class="rt">Fahr zu <b>${best.cc === 'AT' ? '🇦🇹 ' : ''}${esc(best.name)}</b></div>
+         <div class="rs">spart <b>${eur(c.save)}</b> gegenüber ${esc(near.name)} (nächste, ${String(near.dist).replace('.', ',')} km) – inkl. ${c.extraKm.toFixed(1).replace('.', ',')} km Umweg für ${eur(c.extraCost)}</div>`
+      : `<div class="rt">Tank bei der nächsten: <b>${near.cc === 'AT' ? '🇦🇹 ' : ''}${esc(near.name)}</b></div>
+         <div class="rs">Bei ${cfg.liters} l spart kein Umweg mehr als 50 ct.</div>`}
+    <div class="rf">Fahrtkosten ${(kmCost * 100).toFixed(1).replace('.', ',')} ct/km = ${String(cfg.cons).replace('.', ',')} l/100 km × Ø ${avg.toFixed(3).replace('.', ',')} € (Schnitt aus ${n} Tankstelle${n === 1 ? '' : 'n'} im 10-km-Umkreis) + ${(cfg.wear * 100).toFixed(0)} ct Verschleiß. Umweg = Mehrentfernung × 2 (hin & zurück) × ${String(ROAD).replace('.', ',')} (Straße statt Luftlinie).</div>
+  </div>`;
+}
+function calcLine(s){
+  const c = calc[s.id]; if (!c) return '';
+  if (c.isNear) return `<div class="cl">📍 nächste Tankstelle · Vergleichsbasis</div>`;
+  if (c.diff <= 0) return `<div class="cl bad">lohnt sich nicht – nicht günstiger als die nächste</div>`;
+  const beTxt = c.be <= 1 ? 'lohnt ab 1 l' : c.be > TANK ? `lohnt erst ab ${Math.ceil(c.be)} l (mehr als ein Tank)` : `lohnt ab ${Math.ceil(c.be)} l`;
+  const res = c.save >= 0 ? `<span class="good">spart ${eur(c.save)}</span>` : `<span class="bad">kostet ${eur(-c.save)} mehr</span>`;
+  return `<div class="cl">${beTxt} · ${res} bei ${cfg.liters} l · +${c.extraKm.toFixed(1).replace('.', ',')} km</div>`;
 }
 
 /* ---------- Verlauf ---------- */
@@ -371,6 +435,9 @@ function renderSheet(){
     ${sheet.searching ? '<div class="spin" style="margin:14px auto"></div>' : ''}
     ${sheet.msg ? `<p class="hint">${esc(sheet.msg)}</p>` : ''}
     <div class="res">${sheet.results.map((r, i) => `<button data-s="pick" data-i="${i}">${esc(r.name)}</button>`).join('')}</div>
+    <label class="f">Auto (für „Lohnt sich die Fahrt?“)</label>
+    <div class="row"><div style="flex:1"><div class="hint" style="font-size:12px">Verbrauch l/100 km</div><input type="text" inputmode="decimal" id="cons" value="${String(cfg.cons).replace('.', ',')}"></div>
+      <div style="flex:1"><div class="hint" style="font-size:12px">Verschleiß ct/km</div><input type="text" inputmode="decimal" id="wear" value="${String(Math.round(cfg.wear * 1000) / 10).replace('.', ',')}"></div></div>
     <label class="f">Umkreis</label>
     <select id="rad">${[2, 5, 10, 15, 25].map(r => `<option value="${r}" ${cfg.rad === r ? 'selected' : ''}>${r} km</option>`).join('')}</select>
     <label class="f" style="display:flex;align-items:center;gap:10px;color:var(--ink);font-size:16px;margin-top:16px"><input type="checkbox" id="atOn" ${cfg.at ? 'checked' : ''} style="width:20px;height:20px;accent-color:var(--accent)"> Tankstellen in Österreich einbeziehen</label>
@@ -394,6 +461,9 @@ function applySettings(){
   const k = $('#key'), r = $('#rad'), a = $('#atOn');
   if (a && a.checked !== cfg.at) { cfg.at = a.checked; cache = null; }
   if (k) cfg.key = k.value.trim();
+  const cn = $('#cons'), wr = $('#wear');
+  if (cn) { const v = +cn.value.replace(',', '.'); if (v > 1 && v < 30) cfg.cons = v; }
+  if (wr) { const v = +wr.value.replace(',', '.'); if (v >= 0 && v < 100) cfg.wear = v / 100; }
   if (r) cfg.rad = +r.value;
   save('cfg', cfg);
 }
@@ -424,6 +494,12 @@ function gps(){
 
 $('#fuel').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; cfg.fuel = b.dataset.v; save('cfg', cfg); fetchPrices(); });
 $('#refresh').addEventListener('click', () => fetchPrices(true));
+$('#main').addEventListener('change', e => {
+  if (e.target.id !== 'liters') return;
+  const v = Math.round(+String(e.target.value).replace(',', '.'));
+  if (v >= 1 && v <= 200) { cfg.liters = v; save('cfg', cfg); }
+  render();
+});
 $('#main').addEventListener('click', e => { const b = e.target.closest('[data-sort]'); if (!b) return; cfg.sort = b.dataset.sort; save('cfg', cfg); render(); });
 $('#views').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; view = b.dataset.v; render(); window.scrollTo(0, 0); });
 $('#settings').addEventListener('click', openSheet);
