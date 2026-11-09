@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#1f7a4d">
+<title>Spritpreise</title>
+<style>
+:root{--bg:#f5f6f3;--card:#fff;--ink:#1c2320;--muted:#69736e;--line:#e2e6e2;--accent:#1f7a4d;--accent-soft:#e2f1e8;--warn:#9a5600;--warn-soft:#fcf0de}
+@media (prefers-color-scheme:dark){:root{--bg:#121514;--card:#1c201e;--ink:#e7ebe8;--muted:#98a29d;--line:#2d3330;--accent:#4cc38a;--accent-soft:#1b3127;--warn:#f0b35a;--warn-soft:#372a16}}
+*{box-sizing:border-box}
+body{margin:0;font:16px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--ink);-webkit-text-size-adjust:100%}
+header{position:sticky;top:0;z-index:5;background:var(--bg);padding:14px 16px 10px;border-bottom:1px solid var(--line)}
+.wrap{max-width:640px;margin:0 auto}
+.top{display:flex;align-items:center;gap:8px}
+h1{font-size:21px;margin:0;flex:1}
+.icon{background:none;border:0;color:var(--ink);font-size:20px;cursor:pointer;padding:6px 8px;border-radius:8px}
+.loc{font-size:14px;color:var(--muted);margin-top:2px;cursor:pointer}
+.loc b{color:var(--ink)}
+.seg{display:flex;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:3px;margin-top:10px}
+.seg button{flex:1;border:0;background:none;padding:7px 4px;font:inherit;font-size:15px;font-weight:600;color:var(--muted);border-radius:7px;cursor:pointer}
+.seg button.on{background:var(--accent);color:#fff}
+main{padding:14px 16px 40px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:10px}
+.st{display:flex;gap:12px;align-items:center;text-decoration:none;color:inherit}
+.st .info{flex:1;min-width:0}
+.st .brand{font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.st .addr{font-size:13px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.price{font-size:26px;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:-.02em;white-space:nowrap}
+.price sup{font-size:14px;margin-left:1px}
+.card.best{background:var(--accent-soft);border-color:var(--accent)}
+.card.best .price{color:var(--accent)}
+.card.closed{opacity:.5}
+.diff{font-size:12px;color:var(--muted);text-align:right}
+.tag{display:inline-block;font-size:11px;font-weight:700;border-radius:5px;padding:1px 6px;margin-left:6px;vertical-align:1px}
+.tag.cheap{background:var(--accent);color:#fff}
+.tag.cl{background:var(--line);color:var(--muted)}
+.meta{display:flex;justify-content:space-between;align-items:center;font-size:13px;color:var(--muted);margin:2px 2px 10px}
+.btn{font:inherit;font-weight:600;border:0;border-radius:10px;padding:10px 14px;background:var(--accent);color:#fff;cursor:pointer}
+.btn.ghost{background:var(--accent-soft);color:var(--accent)}
+.btn.wide{width:100%}
+.msg{background:var(--warn-soft);color:var(--warn);border-radius:12px;padding:12px 14px;font-size:14px;margin-bottom:10px}
+.hint{color:var(--muted);font-size:14px}
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:20;display:flex;align-items:flex-end;justify-content:center}
+.sheet{background:var(--card);width:100%;max-width:640px;max-height:90vh;overflow:auto;border-radius:18px 18px 0 0;padding:16px 16px 26px}
+.sheet h2{font-size:18px;margin:0 0 12px}
+label.f{display:block;font-size:13px;color:var(--muted);margin:12px 0 4px}
+input[type=text],select{font:inherit;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink);width:100%}
+.row{display:flex;gap:8px}
+.res button{display:block;width:100%;text-align:left;background:none;border:0;border-top:1px solid var(--line);padding:10px 2px;font:inherit;color:var(--ink);cursor:pointer}
+.spin{width:30px;height:30px;border:3px solid var(--line);border-top-color:var(--accent);border-radius:50%;animation:sp 1s linear infinite;margin:30px auto}
+@keyframes sp{to{transform:rotate(360deg)}}
+.foot{font-size:12px;color:var(--muted);text-align:center;margin-top:16px}
+.foot a{color:inherit}
+
+.pm{background:none;border:0}
+.pm div{position:absolute;transform:translate(-50%,calc(-100% - 7px));background:var(--card);color:var(--ink);border:2px solid var(--muted);border-radius:8px;padding:2px 6px;font:700 13px/1.3 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;white-space:nowrap;box-shadow:0 1px 4px rgba(0,0,0,.3)}
+.pm div::after{content:"";position:absolute;left:50%;bottom:-7px;margin-left:-6px;border:6px solid transparent;border-bottom:0;border-top-color:inherit}
+.pm.best div{background:var(--accent);border-color:var(--accent);color:#fff}
+.pm.best div::after{border-top-color:var(--accent)}
+#mapwrap{position:relative}
+#map{position:absolute;inset:0}
+#mapmsg{position:absolute;left:12px;right:12px;top:12px;z-index:500}
+.leaflet-popup-content{margin:10px 12px;font:14px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+.pop b{font-size:15px}.pop .pp{font-size:20px;font-weight:800;margin:2px 0}.pop a.btn{display:inline-block;margin-top:6px;color:#fff;text-decoration:none;padding:6px 10px;font-size:14px}
+.pop .trend{border:0;padding:0;margin-top:4px}
+.trend{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:6px;font-size:13px;color:var(--muted)}
+.trend:empty{display:none}
+.tr.up{color:#d6453d;font-weight:700}
+.tr.down{color:var(--accent);font-weight:700}
+.spark{flex:none;color:var(--muted)}
+.reco{border-color:var(--accent)}
+.reco .rh{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--muted);margin-bottom:10px}
+.reco .rh input{width:70px;font:inherit;font-weight:700;font-size:16px;padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);text-align:center}
+.reco .rt{font-size:18px}
+.reco .rs{font-size:14px;margin-top:4px}
+.reco .rf{font-size:12px;color:var(--muted);margin-top:8px;line-height:1.35}
+.cl{font-size:13px;margin-top:8px;padding-top:8px;border-top:1px solid var(--line);color:var(--muted)}
+.cl .good{color:var(--accent);font-weight:700}
+.cl .bad,.cl.bad{color:#d6453d}
+.cl.bad{font-weight:400}
+.sortbar{display:flex;align-items:center;gap:6px;margin:0 0 10px;font-size:14px;color:var(--muted)}
+.sortbar button{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:999px;padding:5px 12px;font:inherit;font-size:14px;font-weight:600;cursor:pointer}
+.sortbar button.on{background:var(--accent);border-color:var(--accent);color:#fff}
+.views{display:flex;gap:6px;margin-top:8px}
+.views button{flex:1;border:1px solid var(--line);background:none;padding:6px;font:inherit;font-size:14px;font-weight:600;color:var(--muted);border-radius:8px;cursor:pointer}
+.views button.on{border-color:var(--accent);color:var(--accent);background:var(--accent-soft)}
+.cc{font-size:15px;margin-right:4px}
+.chart svg{width:100%;height:auto;display:block}
+.legend{display:flex;gap:14px;font-size:13px;color:var(--muted);margin-top:6px}
+.legend i{display:inline-block;width:12px;height:3px;border-radius:2px;margin-right:5px;vertical-align:3px}
+.tbl{width:100%;border-collapse:collapse;font-size:14px;font-variant-numeric:tabular-nums}
+.tbl td,.tbl th{padding:6px 2px;border-top:1px solid var(--line);text-align:right}
+.tbl th{color:var(--muted);font-weight:600;font-size:12px;border-top:0}
+.tbl td:first-child,.tbl th:first-child{text-align:left}
+.sum{display:flex;gap:10px;margin-bottom:10px}
+.sum .card{flex:1;margin:0;padding:10px 12px}
+.sum .k{font-size:12px;color:var(--muted)}
+.sum .v{font-size:20px;font-weight:800;font-variant-numeric:tabular-nums}
+</style>
+</head>
+<body>
+<header><div class="wrap">
+  <div class="top"><h1>⛽ Spritpreise</h1>
+    <button class="icon" id="refresh" aria-label="Aktualisieren">↻</button>
+    <button class="icon" id="settings" aria-label="Einstellungen">⚙︎</button></div>
+  <div class="loc" id="loc"></div>
+  <div class="seg" id="fuel">
+    <button data-v="diesel">Diesel</button><button data-v="e5">Super E5</button><button data-v="e10">Super E10</button>
+  </div>
+  <div class="views" id="views"><button data-v="list">☰ Liste</button><button data-v="map">🗺 Karte</button></div>
+</div></header>
+<main class="wrap" id="main"></main>
+<div id="mapwrap" hidden><div id="map"></div><div id="mapmsg"></div></div>
+<div id="sheet"></div>
+
+<script>
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const API = 'https://creativecommons.tankerkoenig.de/json/list.php';
+const DEFAULT_KEY = '';
+const MIN_GAP = 5 * 60 * 1000; // Tankerkönig bittet um sparsame Abfragen
+const AT_API = 'https://api.e-control.at/sprit/1.0/search/gas-stations/by-address';
+const AT_TYPE = {diesel: 'DIE', e5: 'SUP'};
+const FUEL_LABEL = {diesel: 'Diesel', e5: 'Super E5 / Super 95', e10: 'Super E10'};
+
+function load(k, d){ try { const v = localStorage.getItem('sp-' + k); return v == null ? d : JSON.parse(v); } catch(e) { return d; } }
+function save(k, v){ try { localStorage.setItem('sp-' + k, JSON.stringify(v)); } catch(e) {} }
+
+let cfg = load('cfg', {key: DEFAULT_KEY, fuel: 'diesel', rad: 10, loc: {name:'Lindau (Bodensee)', lat:47.5456, lng:9.6854}});
+let cache = load('cache2', null);   // {at, fuel, rad, lat, lng, stations, atInfo}
+let sh = loadSh();
+let view = 'list';
+let busy = false, error = '';
+if (cfg.at === undefined) cfg.at = true;
+if (!cfg.liters) cfg.liters = 45;
+if (!cfg.cons) cfg.cons = 6.5;
+if (cfg.wear == null) cfg.wear = 0.05;
+const ROAD = 1.3, TANK = 56;
+let calc = {}, calcInfo = null;
+
+function fmtPrice(p){
+  const s = p.toFixed(3).replace('.', ',');
+  return `${s.slice(0, -1)}<sup>${s.slice(-1)}</sup>`;
+}
+function ago(t){
+  const m = Math.round((Date.now() - t) / 60000);
+  if (m < 1) return 'gerade eben';
+  if (m < 60) return `vor ${m} Min.`;
+  const d = new Date(t);
+  return d.toLocaleString('de-DE', {weekday:'short', hour:'2-digit', minute:'2-digit'});
+}
+const sameQuery = c => c && c.fuel === cfg.fuel && c.rad === cfg.rad && c.lat === cfg.loc.lat && c.lng === cfg.loc.lng;
+
+async function fetchDE(){
+  const url = `${API}?lat=${cfg.loc.lat}&lng=${cfg.loc.lng}&rad=${cfg.rad}&sort=dist&type=${cfg.fuel}&apikey=${encodeURIComponent(cfg.key)}`;
+  let r;
+  try { r = await fetch(url); } catch(e) { throw {msg: 'Keine Verbindung zu Tankerkönig. Bist du online?'}; }
+  const j = await r.json().catch(() => null);
+  if (!j) throw {msg: `Unerwartete Antwort von Tankerkönig (HTTP ${r.status}).`};
+  if (!j.ok) throw {msg: /apikey|key/i.test(j.message || '') ? 'Der Tankerkönig-API-Key wurde abgelehnt. Prüfe ihn in den Einstellungen.' : 'Tankerkönig meldet: ' + (j.message || 'Fehler')};
+  return (j.stations || []).map(s => ({
+    id: 'de-' + s.id, cc: 'DE', name: s.brand || s.name || 'Tankstelle',
+    addr: [s.street, s.houseNumber].filter(Boolean).join(' ') + (s.place ? ', ' + s.place : ''),
+    lat: s.lat, lng: s.lng, dist: +s.dist, price: typeof s.price === 'number' && s.price > 0 ? s.price : null, isOpen: !!s.isOpen}));
+}
+async function fetchAT(){
+  const t = AT_TYPE[cfg.fuel];
+  if (!t) return {list: [], info: 'In Österreich gibt es kein E10 – wähle „Super E5“ für Super 95.'};
+  const url = `${AT_API}?latitude=${cfg.loc.lat}&longitude=${cfg.loc.lng}&fuelType=${t}&includeClosed=false`;
+  let r;
+  try { r = await fetch(url); } catch(e) { return {list: [], info: 'Österreich-Preise gerade nicht erreichbar.'}; }
+  const j = await r.json().catch(() => null);
+  if (!Array.isArray(j)) return {list: [], info: 'Österreich-Preise gerade nicht erreichbar.'};
+  const list = j.map(s => {
+    const p = (s.prices || []).find(x => x.fuelType === t);
+    const L = s.location || {};
+    return {id: 'at-' + s.id, cc: 'AT', name: s.name || 'Tankstelle',
+      addr: [L.address, L.city].filter(Boolean).join(', '),
+      lat: +L.latitude, lng: +L.longitude, dist: Math.round((+s.distance || 0) * 10) / 10,
+      price: p && typeof p.amount === 'number' ? p.amount : null, isOpen: s.open !== false};
+  }).filter(s => s.dist <= cfg.rad && s.price != null);  // E-Control veröffentlicht nur die 5 günstigsten Preise
+  return {list, info: list.length ? '' : `Keine österreichische Tankstelle mit Preis im Umkreis von ${cfg.rad} km.`};
+}
+async function fetchPrices(force){
+  if (busy) return;
+  if (!cfg.key) { error = 'Bitte trage in den Einstellungen (⚙︎) deinen Tankerkönig-API-Key ein.'; render(); return; }
+  if (!force && sameQuery(cache) && Date.now() - cache.at < MIN_GAP) { render(); return; }
+  if (force && sameQuery(cache) && Date.now() - cache.at < 60000) { render(); return; }
+  busy = true; error = ''; render();
+  const [de, at] = await Promise.allSettled([fetchDE(), cfg.at ? fetchAT() : Promise.resolve({list: [], info: ''})]);
+  if (de.status === 'rejected' && (at.status !== 'fulfilled' || !at.value.list.length)) {
+    error = de.reason && de.reason.msg ? de.reason.msg : 'Abfrage fehlgeschlagen.';
+  } else {
+    const deList = de.status === 'fulfilled' ? de.value : [];
+    const atv = at.status === 'fulfilled' ? at.value : {list: [], info: 'Österreich-Preise gerade nicht erreichbar.'};
+    cache = {at: Date.now(), fuel: cfg.fuel, rad: cfg.rad, lat: cfg.loc.lat, lng: cfg.loc.lng,
+      stations: deList.concat(atv.list), atInfo: cfg.at ? atv.info : '', deErr: de.status === 'rejected' ? (de.reason && de.reason.msg) || 'Deutschland-Preise nicht erreichbar.' : ''};
+    save('cache2', cache);
+    recordStations(cache);
+  }
+  busy = false; render();
+}
+function render(){
+  document.querySelectorAll('#fuel button').forEach(b => b.classList.toggle('on', b.dataset.v === cfg.fuel));
+  document.querySelectorAll('#views button').forEach(b => b.classList.toggle('on', b.dataset.v === view));
+  const isMap = view === 'map';
+  $('#main').hidden = isMap; $('#mapwrap').hidden = !isMap;
+  if (isMap) { renderMap(); return; }
+
+  $('#loc').innerHTML = `📍 <b>${esc(cfg.loc.name)}</b> · ${cfg.rad} km Umkreis ›`;
+  let h = '';
+  if (error) h += `<div class="msg">${esc(error)}</div>`;
+  if (busy && !sameQuery(cache)) { $('#main').innerHTML = h + '<div class="spin"></div>'; return; }
+  if (sameQuery(cache)) {
+    const all = cache.stations;
+    const open = all.filter(s => s.isOpen && typeof s.price === 'number' && s.price > 0).sort((a, b) => a.price - b.price || a.dist - b.dist);
+    const closed = all.filter(s => !open.includes(s));
+    h += `<div class="meta"><span>${open.length} geöffnet · Stand ${ago(cache.at)}</span>${busy ? '<span>lädt …</span>' : ''}</div>`;
+    if (cache.deErr) h += `<div class="msg">${esc(cache.deErr)}</div>`;
+    if (cache.atInfo) h += `<p class="hint" style="margin:0 2px 10px">🇦🇹 ${esc(cache.atInfo)}</p>`;
+    if (!all.length) h += `<p class="hint">Keine Tankstellen im Umkreis gefunden. Vergrößere den Umkreis in den Einstellungen.</p>`;
+    const min = open.length ? open[0].price : null;
+    const bestId = open.length ? open[0].id : null;
+    computeCalc(open);
+    if (calcInfo) h += recoCard();
+    h += `<div class="sortbar"><span>Sortieren:</span><button data-sort="price" class="${cfg.sort !== 'dist' && cfg.sort !== 'save' ? 'on' : ''}">💶 Preis</button><button data-sort="dist" class="${cfg.sort === 'dist' ? 'on' : ''}">📍 Nähe</button><button data-sort="save" class="${cfg.sort === 'save' ? 'on' : ''}">💡 Ersparnis</button></div>`;
+    const shown = cfg.sort === 'dist' ? open.slice().sort((a, b) => a.dist - b.dist || a.price - b.price)
+      : cfg.sort === 'save' ? open.slice().sort((a, b) => (calc[b.id] ? calc[b.id].save : -99) - (calc[a.id] ? calc[a.id].save : -99))
+      : open;
+    shown.forEach(s => h += station(s, s.id === bestId, min));
+    if (closed.length) h += `<p class="hint" style="margin:16px 2px 8px">Geschlossen</p>` + closed.map(s => station(s, false, null, true)).join('');
+  } else if (!busy && !error) {
+    h += `<p class="hint">Tippe auf ↻, um die Preise zu laden.</p>`;
+  }
+  h += foot();
+  $('#main').innerHTML = h;
+}
+function foot(){
+  return `<p class="foot">🇩🇪 <a href="https://creativecommons.tankerkoenig.de" target="_blank" rel="noopener">Tankerkönig</a> / MTS-K · CC BY 4.0${cfg.at ? '<br>🇦🇹 <a href="https://www.spritpreisrechner.at" target="_blank" rel="noopener">E-Control Spritpreisrechner</a> (nur die 5 günstigsten Preise)' : ''}<br>▲▼ = Änderung seit der vorletzten Abfrage dieser Seite. Die Uhrzeit ist der Zeitpunkt, an dem die Seite den neuen Preis zuerst gesehen hat. Linie = letzte 3 Tage.</p>`;
+}
+function station(s, best, min, isClosed){
+  const nav = `https://www.google.com/maps/dir/?api=1&destination=${s.lat},${s.lng}`;
+  const diff = !best && min != null && s.price != null ? `+${Math.round((s.price - min) * 100)} ct` : '';
+  return `<div class="card${best ? ' best' : ''}${isClosed ? ' closed' : ''}"><a class="st" href="${nav}" target="_blank" rel="noopener">
+    <div class="info"><div class="brand"><span class="cc">${s.cc === 'AT' ? '🇦🇹' : '🇩🇪'}</span>${esc(s.name)}${best ? '<span class="tag cheap">günstigste</span>' : ''}${isClosed ? '<span class="tag cl">zu</span>' : ''}</div>
+      <div class="addr">${esc(s.addr)} · ${String(s.dist).replace('.', ',')} km</div></div>
+    <div>${s.price != null ? `<div class="price">${fmtPrice(s.price)}</div>` : '<div class="hint">–</div>'}${diff ? `<div class="diff">${diff}</div>` : ''}</div>
+  </a>${isClosed ? '' : calcLine(s) + `<div class="trend">${trend(s)}</div>`}</div>`;
+}
+
+/* ---------- Lohnt sich die Fahrt? ---------- */
+const eur = v => v.toFixed(2).replace('.', ',') + ' €';
+function computeCalc(open){
+  calc = {}; calcInfo = null;
+  if (!open.length) return;
+  const near = open.reduce((a, b) => b.dist < a.dist ? b : a);
+  const in10 = open.filter(s => s.dist <= 10);
+  const base = in10.length ? in10 : open;
+  const avg = base.reduce((t, s) => t + s.price, 0) / base.length;
+  const kmCost = cfg.cons / 100 * avg + cfg.wear;
+  const L = cfg.liters;
+  for (const s of open) {
+    const extraKm = Math.max(0, s.dist - near.dist) * 2 * ROAD;
+    const extraCost = extraKm * kmCost;
+    const diff = near.price - s.price;
+    const save = s.id === near.id ? 0 : diff * L - extraCost;
+    const be = diff > 0 ? extraCost / diff : Infinity;
+    calc[s.id] = {extraKm, extraCost, diff, save, be, isNear: s.id === near.id};
+  }
+  let best = near;
+  for (const s of open) if (calc[s.id].save > calc[best.id].save) best = s;
+  calcInfo = {near, best, avg, kmCost, n: base.length};
+}
+function recoCard(){
+  const {near, best, avg, kmCost, n} = calcInfo, c = calc[best.id];
+  const worth = best.id !== near.id && c.save >= 0.50;
+  return `<div class="card reco">
+    <div class="rh"><span>⛽ Ich tanke ca.</span><input type="number" inputmode="numeric" id="liters" min="1" max="200" value="${cfg.liters}"><span>Liter</span></div>
+    ${worth
+      ? `<div class="rt">Fahr zu <b>${best.cc === 'AT' ? '🇦🇹 ' : ''}${esc(best.name)}</b></div>
+         <div class="rs">spart <b>${eur(c.save)}</b> gegenüber ${esc(near.name)} (nächste, ${String(near.dist).replace('.', ',')} km) – inkl. ${c.extraKm.toFixed(1).replace('.', ',')} km Umweg für ${eur(c.extraCost)}</div>`
+      : `<div class="rt">Tank bei der nächsten: <b>${near.cc === 'AT' ? '🇦🇹 ' : ''}${esc(near.name)}</b></div>
+         <div class="rs">Bei ${cfg.liters} l spart kein Umweg mehr als 50 ct.</div>`}
+    <div class="rf">Fahrtkosten ${(kmCost * 100).toFixed(1).replace('.', ',')} ct/km = ${String(cfg.cons).replace('.', ',')} l/100 km × Ø ${avg.toFixed(3).replace('.', ',')} € (Schnitt aus ${n} Tankstelle${n === 1 ? '' : 'n'} im 10-km-Umkreis) + ${(cfg.wear * 100).toFixed(0)} ct Verschleiß. Umweg = Mehrentfernung × 2 (hin & zurück) × ${String(ROAD).replace('.', ',')} (Straße statt Luftlinie).</div>
+  </div>`;
+}
+function calcLine(s){
+  const c = calc[s.id]; if (!c) return '';
+  if (c.isNear) return `<div class="cl">📍 nächste Tankstelle · Vergleichsbasis</div>`;
+  if (c.diff <= 0) return `<div class="cl bad">lohnt sich nicht – nicht günstiger als die nächste</div>`;
+  const beTxt = c.be <= 1 ? 'lohnt ab 1 l' : c.be > TANK ? `lohnt erst ab ${Math.ceil(c.be)} l (mehr als ein Tank)` : `lohnt ab ${Math.ceil(c.be)} l`;
+  const res = c.save >= 0 ? `<span class="good">spart ${eur(c.save)}</span>` : `<span class="bad">kostet ${eur(-c.save)} mehr</span>`;
+  return `<div class="cl">${beTxt} · ${res} bei ${cfg.liters} l · +${c.extraKm.toFixed(1).replace('.', ',')} km</div>`;
+}
+
+/* ---------- Verlauf ---------- */
+const C_DE = '#3b82f6', C_AT = '#e5484d';
+const dayKey = t => { const d = new Date(t); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
+const dm = t => new Date(t).toLocaleDateString('de-DE', {day: '2-digit', month: '2-digit'});
+const hm = t => new Date(t).toLocaleTimeString('de-DE', {hour: '2-digit', minute: '2-digit'});
+const p3 = v => v == null ? '–' : v.toFixed(3).replace('.', ',');
+/* Preisänderungen je Tankstelle: sh["<id>:<sorte>"] = [[zeit, preis], ...] – neuer Punkt nur bei Änderung */
+function recordStations(c){
+  const now = c.at, cutPts = now - 14 * 864e5, cutSt = now - 45 * 864e5;
+  for (const st of c.stations) {
+    if (st.price == null || !st.isOpen) continue;
+    const k = st.id + ':' + c.fuel, a = sh[k] || (sh[k] = []);
+    const last = a[a.length - 1];
+    if (!last || Math.abs(last[1] - st.price) > 1e-6) a.push([now, st.price]);
+    a.seen = now;
+    while (a.length > 2 && a[1][0] < cutPts) a.shift();   // ältesten Punkt vor dem Fenster als Anker behalten
+    if (a.length > 300) a.splice(0, a.length - 300);
+  }
+  const out = {};
+  for (const k in sh) { const a = sh[k]; const seen = a.seen || (a.length ? a[a.length - 1][0] : 0); if (seen > cutSt) out[k] = {p: a, s: seen}; }
+  save('sh', out);
+}
+function loadSh(){
+  const raw = load('sh', {}), o = {};
+  for (const k in raw) { if (raw[k] && Array.isArray(raw[k].p)) { o[k] = raw[k].p; o[k].seen = raw[k].s; } }
+  return o;
+}
+function when(t){
+  const d = new Date(t), today = dayKey(Date.now()), k = dayKey(t);
+  if (k === today) return hm(t);
+  if (k === dayKey(Date.now() - 864e5)) return 'gestern ' + hm(t);
+  return dm(t) + ' ' + hm(t);
+}
+function trend(st){
+  const a = sh[st.id + ':' + cfg.fuel];
+  if (!a || !a.length || st.price == null) return '';
+  const n = a.length;
+  let t = '';
+  if (n >= 2) {
+    const d = Math.round((a[n - 1][1] - a[n - 2][1]) * 1000) / 10;   // in Cent, 1 Nachkommastelle
+    const ct = String(Math.abs(d)).replace('.', ',');
+    t = d > 0 ? `<span class="tr up">▲ ${ct} ct seit ${when(a[n - 1][0])}</span>` : `<span class="tr down">▼ ${ct} ct seit ${when(a[n - 1][0])}</span>`;
+  } else {
+    t = `<span class="tr">● gleich seit ${when(a[0][0])}</span>`;
+  }
+  return t + spark(a, st.price);
+}
+function spark(a, cur){
+  const now = Date.now(), from = now - 3 * 864e5;
+  const pts = a.filter(x => x[0] >= from);
+  const before = a.filter(x => x[0] < from).pop();
+  if (before) pts.unshift([from, before[1]]);
+  if (pts.length < 2) return '';
+  pts.push([now, cur]);
+  const W = 90, H = 24, vs = pts.map(x => x[1]);
+  let lo = Math.min(...vs), hi = Math.max(...vs); if (hi - lo < 0.01) { lo -= 0.005; hi += 0.005; }
+  const t0 = pts[0][0];
+  const X = t => 1 + (t - t0) / (now - t0 || 1) * (W - 2), Y = v => 2 + (hi - v) / (hi - lo) * (H - 4);
+  let d = `M${X(pts[0][0]).toFixed(1)} ${Y(pts[0][1]).toFixed(1)}`;
+  for (let i = 1; i < pts.length; i++) d += `H${X(pts[i][0]).toFixed(1)}V${Y(pts[i][1]).toFixed(1)}`;   // Stufenlinie
+  return `<svg class="spark" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" aria-label="Preisverlauf 3 Tage"><path d="${d}" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>`;
+}
+
+/* ---------- Karte ---------- */
+let L_ready = null, map = null, layer = null, lastFitKey = '';
+function loadLeaflet(){
+  if (L_ready) return L_ready;
+  L_ready = new Promise((ok, fail) => {
+    const css = document.createElement('link');
+    css.rel = 'stylesheet'; css.href = 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css';
+    document.head.appendChild(css);
+    const js = document.createElement('script');
+    js.src = 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js';
+    js.onload = () => ok(window.L); js.onerror = () => { L_ready = null; fail(); };
+    document.head.appendChild(js);
+  });
+  return L_ready;
+}
+function sizeMap(){
+  const w = $('#mapwrap'); if (w.hidden) return;
+  w.style.height = Math.max(300, window.innerHeight - document.querySelector('header').offsetHeight) + 'px';
+  if (map) map.invalidateSize();
+}
+window.addEventListener('resize', sizeMap);
+async function renderMap(){
+  sizeMap();
+  const msg = $('#mapmsg');
+  msg.innerHTML = error ? `<div class="msg">${esc(error)}</div>` : (busy && !sameQuery(cache) ? '<div class="msg">Preise werden geladen …</div>' : '');
+  let L;
+  try { L = await loadLeaflet(); } catch(e) { msg.innerHTML = '<div class="msg">Die Karte konnte nicht geladen werden. Bist du online?</div>'; return; }
+  if (view !== 'map') return;
+  if (!map) {
+    map = L.map('map', {zoomControl: true, attributionControl: true});
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {maxZoom: 19, attribution: '© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>'}).addTo(map);
+    layer = L.layerGroup().addTo(map);
+    map.setView([cfg.loc.lat, cfg.loc.lng], 12);
+  }
+  sizeMap();
+  layer.clearLayers();
+  const me = [cfg.loc.lat, cfg.loc.lng];
+  L.circle(me, {radius: cfg.rad * 1000, color: '#1f7a4d', weight: 1, fillOpacity: 0.04, interactive: false}).addTo(layer);
+  L.circleMarker(me, {radius: 8, color: '#fff', weight: 3, fillColor: '#2f6fe4', fillOpacity: 1}).bindPopup(`<div class="pop"><b>${esc(cfg.loc.name)}</b></div>`).addTo(layer);
+  const pts = [me];
+  if (sameQuery(cache)) {
+    const open = cache.stations.filter(s => s.isOpen && s.price != null && isFinite(s.lat) && isFinite(s.lng)).sort((a, b) => a.price - b.price);
+    const min = open.length ? open[0].price : null;
+    open.forEach((s, i) => {
+      const best = i === 0;
+      const icon = L.divIcon({className: 'pm' + (best ? ' best' : ''), html: `<div>${s.cc === 'AT' ? '🇦🇹 ' : ''}${s.price.toFixed(3).replace('.', ',')}</div>`, iconSize: [0, 0]});
+      const diff = !best && min != null ? ` <span class="hint">+${Math.round((s.price - min) * 100)} ct</span>` : '';
+      const pop = `<div class="pop"><b>${s.cc === 'AT' ? '🇦🇹' : '🇩🇪'} ${esc(s.name)}</b><div class="hint">${esc(s.addr)} · ${String(s.dist).replace('.', ',')} km</div>
+        <div class="pp">${fmtPrice(s.price)} €${diff}</div><div class="trend">${trend(s)}</div>
+        <a class="btn" href="https://www.google.com/maps/dir/?api=1&destination=${s.lat},${s.lng}" target="_blank" rel="noopener">Route starten</a></div>`;
+      L.marker([s.lat, s.lng], {icon, zIndexOffset: best ? 1000 : -i}).bindPopup(pop, {offset: [0, -30]}).addTo(layer);
+      pts.push([s.lat, s.lng]);
+    });
+    if (!open.length && !busy) msg.innerHTML = '<div class="msg">Keine geöffnete Tankstelle mit Preis im Umkreis.</div>';
+  }
+  const fitKey = [cfg.loc.lat, cfg.loc.lng, cfg.rad, cfg.fuel, cache && cache.at].join('|');
+  if (fitKey !== lastFitKey) {
+    lastFitKey = fitKey;
+    if (pts.length > 1) map.fitBounds(L.latLngBounds(pts), {padding: [40, 40], maxZoom: 14});
+    else map.setView(me, 12);
+  }
+}
+
+/* ---------- Einstellungen / Ort ---------- */
+let sheet = null; // {results, searching, msg}
+function openSheet(){ sheet = {results: [], searching: false, msg: '', q: ''}; renderSheet(); }
+function closeSheet(){ sheet = null; renderSheet(); }
+function renderSheet(){
+  const el = $('#sheet');
+  if (!sheet) { el.innerHTML = ''; return; }
+  el.innerHTML = `<div class="overlay" data-s="bg"><div class="sheet">
+    <div class="top"><h2 style="flex:1;margin:0">Einstellungen</h2><button class="icon" data-s="close" aria-label="Schließen">✕</button></div>
+    <label class="f">Standort</label>
+    <button class="btn ghost wide" data-s="gps">📍 Meinen aktuellen Standort verwenden</button>
+    <div class="row" style="margin-top:8px"><input type="text" id="q" placeholder="oder Ort / PLZ suchen" value="${esc(sheet.q)}" enterkeyhint="search"><button class="btn" data-s="search">Suchen</button></div>
+    ${sheet.searching ? '<div class="spin" style="margin:14px auto"></div>' : ''}
+    ${sheet.msg ? `<p class="hint">${esc(sheet.msg)}</p>` : ''}
+    <div class="res">${sheet.results.map((r, i) => `<button data-s="pick" data-i="${i}">${esc(r.name)}</button>`).join('')}</div>
+    <label class="f">Auto (für „Lohnt sich die Fahrt?“)</label>
+    <div class="row"><div style="flex:1"><div class="hint" style="font-size:12px">Verbrauch l/100 km</div><input type="text" inputmode="decimal" id="cons" value="${String(cfg.cons).replace('.', ',')}"></div>
+      <div style="flex:1"><div class="hint" style="font-size:12px">Verschleiß ct/km</div><input type="text" inputmode="decimal" id="wear" value="${String(Math.round(cfg.wear * 1000) / 10).replace('.', ',')}"></div></div>
+    <label class="f">Umkreis</label>
+    <select id="rad">${[2, 5, 10, 15, 25].map(r => `<option value="${r}" ${cfg.rad === r ? 'selected' : ''}>${r} km</option>`).join('')}</select>
+    <label class="f" style="display:flex;align-items:center;gap:10px;color:var(--ink);font-size:16px;margin-top:16px"><input type="checkbox" id="atOn" ${cfg.at ? 'checked' : ''} style="width:20px;height:20px;accent-color:var(--accent)"> Tankstellen in Österreich einbeziehen</label>
+    <label class="f">Tankerkönig-API-Key</label>
+    <input type="text" id="key" value="${esc(cfg.key)}" autocomplete="off" spellcheck="false">
+    <button class="btn wide" style="margin-top:16px" data-s="close">Fertig</button>
+  </div></div>`;
+}
+$('#sheet').addEventListener('click', async e => {
+  const b = e.target.closest('[data-s]'); if (!b) return;
+  const a = b.dataset.s;
+  if (a === 'bg' && e.target !== b) return;
+  if (a === 'bg' || a === 'close') { applySettings(); closeSheet(); fetchPrices(); }
+  else if (a === 'search') search();
+  else if (a === 'pick') { const r = sheet.results[+b.dataset.i]; setLoc(r); }
+  else if (a === 'gps') gps();
+});
+$('#sheet').addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.id === 'q') { e.preventDefault(); search(); } });
+$('#sheet').addEventListener('input', e => { if (e.target.id === 'q') sheet.q = e.target.value; });
+function applySettings(){
+  const k = $('#key'), r = $('#rad'), a = $('#atOn');
+  if (a && a.checked !== cfg.at) { cfg.at = a.checked; cache = null; }
+  if (k) cfg.key = k.value.trim();
+  const cn = $('#cons'), wr = $('#wear');
+  if (cn) { const v = +cn.value.replace(',', '.'); if (v > 1 && v < 30) cfg.cons = v; }
+  if (wr) { const v = +wr.value.replace(',', '.'); if (v >= 0 && v < 100) cfg.wear = v / 100; }
+  if (r) cfg.rad = +r.value;
+  save('cfg', cfg);
+}
+function setLoc(l){
+  applySettings();
+  cfg.loc = {name: l.name, lat: +(+l.lat).toFixed(5), lng: +(+l.lng).toFixed(5)};
+  save('cfg', cfg); closeSheet(); fetchPrices();
+}
+async function search(){
+  const q = (sheet.q || '').trim(); if (!q) return;
+  sheet.searching = true; sheet.msg = ''; sheet.results = []; renderSheet();
+  try {
+    const r = await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=6&countrycodes=de,at&accept-language=de&q=${encodeURIComponent(q)}`);
+    const j = await r.json();
+    sheet.results = j.map(x => ({name: x.display_name.split(',').slice(0, 3).join(','), lat: x.lat, lng: x.lon}));
+    if (!sheet.results.length) sheet.msg = 'Nichts gefunden.';
+  } catch(e) { sheet.msg = 'Ortssuche gerade nicht erreichbar.'; }
+  sheet.searching = false; renderSheet();
+}
+function gps(){
+  if (!navigator.geolocation) { sheet.msg = 'Dein Browser gibt keinen Standort frei. Nutze die Ortssuche.'; renderSheet(); return; }
+  sheet.msg = 'Standort wird ermittelt …'; renderSheet();
+  navigator.geolocation.getCurrentPosition(
+    p => setLoc({name: 'Mein Standort', lat: p.coords.latitude, lng: p.coords.longitude}),
+    () => { sheet.msg = 'Standort nicht verfügbar (Freigabe verweigert oder Seite nicht über https geöffnet). Nutze die Ortssuche.'; renderSheet(); },
+    {enableHighAccuracy: false, timeout: 10000, maximumAge: 300000});
+}
+
+$('#fuel').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; cfg.fuel = b.dataset.v; save('cfg', cfg); fetchPrices(); });
+$('#refresh').addEventListener('click', () => fetchPrices(true));
+$('#main').addEventListener('change', e => {
+  if (e.target.id !== 'liters') return;
+  const v = Math.round(+String(e.target.value).replace(',', '.'));
+  if (v >= 1 && v <= 200) { cfg.liters = v; save('cfg', cfg); }
+  render();
+});
+$('#main').addEventListener('click', e => { const b = e.target.closest('[data-sort]'); if (!b) return; cfg.sort = b.dataset.sort; save('cfg', cfg); render(); });
+$('#views').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; view = b.dataset.v; render(); window.scrollTo(0, 0); });
+$('#settings').addEventListener('click', openSheet);
+$('#loc').addEventListener('click', openSheet);
+document.addEventListener('visibilitychange', () => { if (!document.hidden) fetchPrices(); });
+
+render();
+if (!cfg.key) openSheet(); else fetchPrices();
+</script>
+</body>
+</html>
